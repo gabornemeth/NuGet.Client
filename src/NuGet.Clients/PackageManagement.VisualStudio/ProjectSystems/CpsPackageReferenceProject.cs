@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 using NuGet.Frameworks;
 using NuGet.LibraryModel;
@@ -15,6 +16,8 @@ using NuGet.ProjectManagement.Projects;
 using NuGet.ProjectModel;
 using NuGet.Protocol.Core.Types;
 using Tasks = System.Threading.Tasks;
+using Microsoft.VisualStudio.ProjectSystem;
+using Microsoft.VisualStudio.ProjectSystem.Properties;
 
 namespace NuGet.PackageManagement.VisualStudio
 {
@@ -28,6 +31,7 @@ namespace NuGet.PackageManagement.VisualStudio
         private readonly string _projectName;
         private readonly string _projectUniqueName;
         private readonly string _projectFullPath;
+        private readonly UnconfiguredProject _unconfiguredProject;
 
         private readonly Func<PackageSpec> _packageSpecFactory;
 
@@ -35,7 +39,8 @@ namespace NuGet.PackageManagement.VisualStudio
             string projectName,
             string projectUniqueName,
             string projectFullPath,
-            Func<PackageSpec> packageSpecFactory)
+            Func<PackageSpec> packageSpecFactory,
+            UnconfiguredProject unconfiguredProject)
         {
             if (projectFullPath == null)
             {
@@ -50,6 +55,8 @@ namespace NuGet.PackageManagement.VisualStudio
             _projectName = projectName;
             _projectUniqueName = projectUniqueName;
             _projectFullPath = projectFullPath;
+
+            _unconfiguredProject = unconfiguredProject;
 
             _packageSpecFactory = packageSpecFactory;
 
@@ -181,14 +188,27 @@ namespace NuGet.PackageManagement.VisualStudio
             return new PackageReference(identity, targetFramework);
         }
 
-        public override Tasks.Task<bool> InstallPackageAsync(PackageIdentity packageIdentity, DownloadResourceResult downloadResourceResult, INuGetProjectContext nuGetProjectContext, CancellationToken token)
+        public override async Task<Boolean> InstallPackageAsync(PackageIdentity packageIdentity, DownloadResourceResult downloadResourceResult, INuGetProjectContext nuGetProjectContext, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var configuredProject = await _unconfiguredProject.GetSuggestedConfiguredProjectAsync();
+            var result = await 
+                configuredProject.Services.PackageReferences.AddAsync
+                (packageIdentity.Id, packageIdentity.Version.ToString());
+            if(!result.Added)
+            {
+                var existingReference = result.Reference;
+                await existingReference.Metadata.SetPropertyValueAsync("Version", packageIdentity.Version.ToString());
+            }
+
+            //TODO: Set additional metadata here.
+            return true;
         }
 
-        public override Tasks.Task<bool> UninstallPackageAsync(PackageIdentity packageIdentity, INuGetProjectContext nuGetProjectContext, CancellationToken token)
+        public override async Task<Boolean> UninstallPackageAsync(PackageIdentity packageIdentity, INuGetProjectContext nuGetProjectContext, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var configuredProject = await _unconfiguredProject.GetSuggestedConfiguredProjectAsync();
+            await configuredProject.Services.PackageReferences.RemoveAsync(packageIdentity.Id);
+            return true;
         }
 
         #endregion
