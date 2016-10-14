@@ -67,7 +67,7 @@ namespace NuGet.PackageManagement.VisualStudio
                 return false;
             }
 
-            if (!hierarchy.IsCapabilityMatch("CPS"))
+            if (!hierarchy.IsCapabilityMatch("CPS") || !hierarchy.IsCapabilityMatch("PackageReference"))
             {
                 return false;
             }
@@ -86,9 +86,10 @@ namespace NuGet.PackageManagement.VisualStudio
                 return null;
             };
 
-             var unconfiguredProject = GetUnconfiguredProject(project);
+             var unconfiguredProject = GetUnconfiguredProject(dteProject);
 
             result = new CpsPackageReferenceProject(
+                dteProject,
                 dteProject.Name,
                 dteProject.UniqueName,
                 fullProjectPath,

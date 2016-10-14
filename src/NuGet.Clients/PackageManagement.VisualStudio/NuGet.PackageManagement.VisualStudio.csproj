@@ -92,7 +92,7 @@
     <Compile Include="BindingRedirectBehavior.cs" />
     <Compile Include="CommonResources.cs" />
     <Compile Include="IDE\IVsSolutionManager.cs" />
-    <Compile Include="ProjectSystems\CpsPackageReferenceProject.cs" />
+    <Compile Include="ProjectSystems\CpsPackageReferenceProject.cs" Condition="'$(VisualStudioVersion)' == '15.0'"/>
     <Compile Include="ProjectSystems\IProjectSystemProvider.cs" />
     <Compile Include="ProjectSystems\MSBuildNuGetProjectProvider.cs" />
     <Compile Include="ProjectSystems\ProjectKNuGetProjectProvider.cs" />
@@ -100,7 +100,7 @@
     <Compile Include="ProjectSystems\ProjectNames.cs" />
     <Compile Include="IDE\IScriptExecutor.cs" />
     <Compile Include="ProjectSystems\IProjectSystemCache.cs" />
-    <Compile Include="ProjectSystems\CpsPackageReferenceProjectProvider.cs" />
+    <Compile Include="ProjectSystems\CpsPackageReferenceProjectProvider.cs" Condition="'$(VisualStudioVersion)' == '15.0'" />
     <Compile Include="ProjectSystems\ProjectSystemProviderContext.cs" />
     <Compile Include="ScriptExecutionRequest.cs" />
     <Compile Include="IDE\VSProjectReferenceUtility.cs" />
