@@ -11,9 +11,9 @@ using VSLangProj150;
 
 namespace NuGet.PackageManagement.VisualStudio
 {
- //   [Export(typeof(IProjectSystemProvider))]
- //   [Name(nameof(LegacyCSProjPackageReferenceProjectProvider))]
-//    [Order(After = nameof(CpsPackageReferenceProjectProvider))]
+    [Export(typeof(IProjectSystemProvider))]
+    [Name(nameof(LegacyCSProjPackageReferenceProjectProvider))]
+    [Order(After = nameof(CpsPackageReferenceProjectProvider))]
     public class LegacyCSProjPackageReferenceProjectProvider : IProjectSystemProvider
     {
 /*        private readonly IProjectSystemCache _projectSystemCache;
@@ -45,7 +45,7 @@ namespace NuGet.PackageManagement.VisualStudio
 
             result = null;
 
-            // The project must be an IVsHierarchy.
+            // The project must be an IVsHierarchy and not CPS.
             var hierarchy = VsHierarchyUtility.ToVsHierarchy(dteProject);
             if (hierarchy == null)
             {
@@ -57,6 +57,7 @@ namespace NuGet.PackageManagement.VisualStudio
                 return false;
             }
 
+            // The project must cast to VSProject4 --this indicates that it's a PackagesReference project
             var vsProject4 = dteProject.Object as VSProject4;
             if (vsProject4 == null)
             {
