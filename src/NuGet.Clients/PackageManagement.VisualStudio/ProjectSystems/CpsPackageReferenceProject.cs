@@ -23,7 +23,7 @@ namespace NuGet.PackageManagement.VisualStudio
     /// Key feature/difference is the project restore info is pushed by nomination API and stored in 
     /// a cache. Factory method retrieving the info from the cache should be provided.
     /// </summary>
-    public class CpsPackageReferenceProject : NuGetProject, INuGetIntegratedProject, IDependencyGraphProject
+    public class CpsPackageReferenceProject : PackageReferenceNuGetProjectBase
     {
         private readonly string _projectName;
         private readonly string _projectUniqueName;
@@ -64,11 +64,35 @@ namespace NuGet.PackageManagement.VisualStudio
         /// Making this timestamp as the current time means that a restore with this project in the graph
         /// will never no-op. We do this to keep this work-around implementation simple.
         /// </summary>
-        public DateTimeOffset LastModified => DateTimeOffset.Now;
+        public override DateTimeOffset LastModified => DateTimeOffset.Now;
 
-        public string MSBuildProjectPath => _projectFullPath;
+        public override string MSBuildProjectPath => _projectFullPath;
 
-        public IReadOnlyList<PackageSpec> GetPackageSpecsForRestore(
+        public override String JsonConfigPath
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override PackageSpec PackageSpec
+        {
+            get
+            {
+                return _packageSpecFactory();
+            }
+        }
+
+        public override String ProjectName
+        {
+            get
+            {
+                return _projectName;
+            }
+        }
+
+        public override IReadOnlyList<PackageSpec> GetPackageSpecsForRestore(
             ExternalProjectReferenceContext context)
         {
             var packageSpec = _packageSpecFactory();
@@ -80,7 +104,7 @@ namespace NuGet.PackageManagement.VisualStudio
             return new PackageSpec[0];
         }
 
-        public async Tasks.Task<IReadOnlyList<ExternalProjectReference>> GetProjectReferenceClosureAsync(
+        public override async Tasks.Task<IReadOnlyList<ExternalProjectReference>> GetProjectReferenceClosureAsync(
             ExternalProjectReferenceContext context)
         {
             await Tasks.TaskScheduler.Default;
@@ -122,7 +146,7 @@ namespace NuGet.PackageManagement.VisualStudio
                 .Select(l => l.Name);
         }
 
-        public bool IsRestoreRequired(IEnumerable<VersionFolderPathResolver> pathResolvers, ISet<PackageIdentity> packagesChecked, ExternalProjectReferenceContext context)
+        public override bool IsRestoreRequired(IEnumerable<VersionFolderPathResolver> pathResolvers, ISet<PackageIdentity> packagesChecked, ExternalProjectReferenceContext context)
         {
             // TODO: when the real implementation of NuGetProject for CPS PackageReference is completed, more
             // sophisticated restore no-op detection logic is required. Always returning true means that every build
@@ -187,6 +211,11 @@ namespace NuGet.PackageManagement.VisualStudio
         }
 
         public override Tasks.Task<bool> UninstallPackageAsync(PackageIdentity packageIdentity, INuGetProjectContext nuGetProjectContext, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Tasks.Task<Boolean> ExecuteInitScriptAsync(PackageIdentity identity, String packageInstallPath, INuGetProjectContext projectContext, Boolean throwOnFailure)
         {
             throw new NotImplementedException();
         }
