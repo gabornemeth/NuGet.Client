@@ -270,7 +270,7 @@ namespace NuGet.ProjectManagement.Projects
         /// <summary>
         /// project.json path
         /// </summary>
-        public override string JsonConfigPath
+        public string JsonConfigPath
         {
             get { return _jsonConfig.FullName; }
         }
@@ -329,6 +329,11 @@ namespace NuGet.ProjectManagement.Projects
             }
 
             return new List<PackageSpec>() { packageSpec };
+        }
+
+        public override string AssetsFile
+        {
+            get { return ProjectJsonPathUtilities.GetLockFilePath(_jsonConfig.FullName); }
         }
 
         /// <summary>

@@ -36,8 +36,11 @@
           <EmbedInteropTypes>True</EmbedInteropTypes>
         </Reference>
         <Reference Include="Microsoft.VisualStudio.ProjectSystem.Interop">
-          <HintPath>$(EnlistmentRoot)\packages\Microsoft.VisualStudio.ProjectSystem.15.0.183-pre\lib\net451\Microsoft.VisualStudio.ProjectSystem.Interop.dll</HintPath>
+          <HintPath>$(EnlistmentRoot)\packages\Microsoft.VisualStudio.ProjectSystem.15.0.530-pre-g355f3866ef\lib\net46\Microsoft.VisualStudio.ProjectSystem.Interop.dll</HintPath>
           <EmbedInteropTypes>True</EmbedInteropTypes>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.ProjectSystem">
+          <HintPath>$(EnlistmentRoot)\packages\Microsoft.VisualStudio.ProjectSystem.15.0.530-pre-g355f3866ef\lib\net46\Microsoft.VisualStudio.ProjectSystem.dll</HintPath>          
         </Reference>
       </ItemGroup>
     </When>
@@ -89,7 +92,7 @@
     <Compile Include="BindingRedirectBehavior.cs" />
     <Compile Include="CommonResources.cs" />
     <Compile Include="IDE\IVsSolutionManager.cs" />
-    <Compile Include="ProjectSystems\CpsPackageReferenceProject.cs" />
+    <Compile Include="ProjectSystems\CpsPackageReferenceProject.cs" Condition="'$(VisualStudioVersion)' == '15.0'"/>
     <Compile Include="ProjectSystems\IProjectSystemProvider.cs" />
     <Compile Include="ProjectSystems\MSBuildNuGetProjectProvider.cs" />
     <Compile Include="ProjectSystems\ProjectKNuGetProjectProvider.cs" />
@@ -97,7 +100,7 @@
     <Compile Include="ProjectSystems\ProjectNames.cs" />
     <Compile Include="IDE\IScriptExecutor.cs" />
     <Compile Include="ProjectSystems\IProjectSystemCache.cs" />
-    <Compile Include="ProjectSystems\CpsPackageReferenceProjectProvider.cs" />
+    <Compile Include="ProjectSystems\CpsPackageReferenceProjectProvider.cs" Condition="'$(VisualStudioVersion)' == '15.0'" />
     <Compile Include="ProjectSystems\ProjectSystemProviderContext.cs" />
     <Compile Include="ScriptExecutionRequest.cs" />
     <Compile Include="IDE\VSProjectReferenceUtility.cs" />

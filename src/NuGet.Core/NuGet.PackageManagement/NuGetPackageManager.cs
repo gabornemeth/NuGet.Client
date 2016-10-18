@@ -2255,20 +2255,16 @@ namespace NuGet.PackageManagement
             LockFile originalLockFile = null;
             var lockFileFormat = new LockFileFormat();
 
-            var lockFilePath = ProjectJsonPathUtilities.GetLockFilePath(buildIntegratedProject.JsonConfigPath);
+            var lockFilePath = buildIntegratedProject.AssetsFile;
 
-            if (File.Exists(lockFilePath))
+            if (!string.IsNullOrEmpty(lockFilePath) && File.Exists(lockFilePath))
             {
                 originalLockFile = lockFileFormat.Read(lockFilePath);
             }
 
             // Read project.json
-            JObject rawPackageSpec;
-            using (var streamReader = new StreamReader(buildIntegratedProject.JsonConfigPath))
-            {
-                var reader = new JsonTextReader(streamReader);
-                rawPackageSpec = JObject.Load(reader);
-            }
+            JObject rawPackageSpec = new JObject();
+            JsonPackageSpecWriter.WritePackageSpec(buildIntegratedProject.PackageSpec, rawPackageSpec);
 
             var logger = new ProjectContextLogger(nuGetProjectContext);
 
@@ -2295,10 +2291,7 @@ namespace NuGet.PackageManagement
                 // If the lock file does not exist, restore before starting the operations
                 if (originalLockFile == null)
                 {
-                    var originalPackageSpec = JsonPackageSpecReader.GetPackageSpec(
-                        rawPackageSpec.ToString(),
-                        buildIntegratedProject.ProjectName,
-                        buildIntegratedProject.JsonConfigPath);
+                    var originalPackageSpec = buildIntegratedProject.PackageSpec;
 
                     var originalRestoreResult = await BuildIntegratedRestoreUtility.RestoreAsync(
                         buildIntegratedProject,
@@ -2325,9 +2318,7 @@ namespace NuGet.PackageManagement
                 }
 
                 // Create a package spec from the modified json
-                var packageSpec = JsonPackageSpecReader.GetPackageSpec(rawPackageSpec.ToString(),
-                    buildIntegratedProject.ProjectName,
-                    buildIntegratedProject.JsonConfigPath);
+                var packageSpec = JsonPackageSpecReader.GetPackageSpec(rawPackageSpec);
 
                 // Restore based on the modified package spec. This operation does not write the lock file to disk.
                 var restoreResult = await BuildIntegratedRestoreUtility.RestoreAsync(
@@ -2407,12 +2398,32 @@ namespace NuGet.PackageManagement
             {
                 // Write out project.json
                 // This can be replaced with the PackageSpec writer once it has been added to the library
-                using (var writer = new StreamWriter(
-                    buildIntegratedProject.JsonConfigPath,
-                    append: false,
-                    encoding: Encoding.UTF8))
+                if (buildIntegratedProject is ProjectJsonBuildIntegratedNuGetProject)
                 {
-                    await writer.WriteAsync(projectAction.UpdatedProjectJson.ToString());
+                    using (var writer = new StreamWriter(
+                        buildIntegratedProject.JsonConfigPath,
+                        append: false,
+                        encoding: Encoding.UTF8))
+                    {
+                        await writer.WriteAsync(projectAction.UpdatedProjectJson.ToString());
+                    }
+                }
+                else
+                {
+                    foreach (var action in nuGetProjectActions)
+                    {
+                        if (action.NuGetProjectActionType == NuGetProjectActionType.Uninstall)
+                        {
+                            await buildIntegratedProject.UninstallPackageAsync(action.PackageIdentity, nuGetProjectContext,
+                                token);
+                        }
+                        else if (action.NuGetProjectActionType == NuGetProjectActionType.Install)
+                        {
+                            await
+                                buildIntegratedProject.InstallPackageAsync(action.PackageIdentity, null,
+                                    nuGetProjectContext, token);
+                        }
+                    }
                 }
 
                 var logger = new ProjectContextLogger(nuGetProjectContext);

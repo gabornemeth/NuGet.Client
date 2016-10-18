@@ -46,17 +46,14 @@ namespace NuGet.ProjectManagement.Projects
             ExternalProjectReferenceContext context);
 
         /// <summary>
-        /// project.json path
-        /// </summary>
-        public abstract string JsonConfigPath { get; }
-
-        /// <summary>
         /// Parsed project.json file
         /// </summary>
         public abstract PackageSpec PackageSpec { get; }
 
         public abstract IReadOnlyList<PackageSpec> GetPackageSpecsForRestore(
             ExternalProjectReferenceContext referenceContext);
+
+        public abstract string AssetsFile { get; }
         
         /// <summary>
         /// Project name

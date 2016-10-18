@@ -15,6 +15,10 @@ using NuGet.ProjectManagement.Projects;
 using NuGet.ProjectModel;
 using NuGet.Protocol.Core.Types;
 using Tasks = System.Threading.Tasks;
+using System.IO;
+using System.Threading.Tasks;
+using EnvDTE;
+using Microsoft.VisualStudio.ProjectSystem;
 
 namespace NuGet.PackageManagement.VisualStudio
 {
@@ -30,12 +34,17 @@ namespace NuGet.PackageManagement.VisualStudio
         private readonly string _projectFullPath;
 
         private readonly Func<PackageSpec> _packageSpecFactory;
+        private IScriptExecutor _scriptExecutor;
+        private readonly Project _envDTEProject;
+        private readonly UnconfiguredProject _unconfiguredProject;
 
         public CpsPackageReferenceProject(
             string projectName,
             string projectUniqueName,
             string projectFullPath,
-            Func<PackageSpec> packageSpecFactory)
+            Func<PackageSpec> packageSpecFactory,
+            Project dteProject,
+            UnconfiguredProject unconfiguredProject)
         {
             if (projectFullPath == null)
             {
@@ -52,6 +61,8 @@ namespace NuGet.PackageManagement.VisualStudio
             _projectFullPath = projectFullPath;
 
             _packageSpecFactory = packageSpecFactory;
+            _envDTEProject = dteProject;
+            _unconfiguredProject = unconfiguredProject;
 
             InternalMetadata.Add(NuGetProjectMetadataKeys.Name, _projectName);
             InternalMetadata.Add(NuGetProjectMetadataKeys.UniqueName, _projectUniqueName);
@@ -67,14 +78,6 @@ namespace NuGet.PackageManagement.VisualStudio
         public override DateTimeOffset LastModified => DateTimeOffset.Now;
 
         public override string MSBuildProjectPath => _projectFullPath;
-
-        public override String JsonConfigPath
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
 
         public override PackageSpec PackageSpec
         {
@@ -205,21 +208,114 @@ namespace NuGet.PackageManagement.VisualStudio
             return new PackageReference(identity, targetFramework);
         }
 
-        public override Tasks.Task<bool> InstallPackageAsync(PackageIdentity packageIdentity, DownloadResourceResult downloadResourceResult, INuGetProjectContext nuGetProjectContext, CancellationToken token)
+        public override async Task<Boolean> InstallPackageAsync(PackageIdentity packageIdentity, DownloadResourceResult downloadResourceResult, INuGetProjectContext nuGetProjectContext, CancellationToken token)
         {
-            throw new NotImplementedException();
+            
+            nuGetProjectContext.Log(MessageLevel.Info, Strings.InstallingPackage, packageIdentity);
+
+            var configuredProject = await _unconfiguredProject.GetSuggestedConfiguredProjectAsync();
+            var result = await
+                configuredProject.Services.PackageReferences.AddAsync
+                (packageIdentity.Id, packageIdentity.Version.ToString());
+            var existingReference = result.Reference;
+            if (!result.Added)
+            {
+                await existingReference.Metadata.SetPropertyValueAsync("Version", packageIdentity.Version.ToFullString());
+            }
+
+            //TODO: Set additional metadata here.
+            return true;
         }
 
-        public override Tasks.Task<bool> UninstallPackageAsync(PackageIdentity packageIdentity, INuGetProjectContext nuGetProjectContext, CancellationToken token)
+        public override async Task<Boolean> UninstallPackageAsync(PackageIdentity packageIdentity, INuGetProjectContext nuGetProjectContext, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var configuredProject = await _unconfiguredProject.GetSuggestedConfiguredProjectAsync();
+            await configuredProject.Services.PackageReferences.RemoveAsync(packageIdentity.Id);
+            return true;
         }
 
-        public override Tasks.Task<Boolean> ExecuteInitScriptAsync(PackageIdentity identity, String packageInstallPath, INuGetProjectContext projectContext, Boolean throwOnFailure)
+        private IScriptExecutor ScriptExecutor
         {
-            throw new NotImplementedException();
+            get
+            {
+                if (_scriptExecutor == null)
+                {
+                    _scriptExecutor = ServiceLocator.GetInstanceSafe<IScriptExecutor>();
+                }
+
+                return _scriptExecutor;
+            }
         }
 
-        #endregion
+        public override async Task<bool> ExecuteInitScriptAsync(
+            PackageIdentity identity,
+            string packageInstallPath,
+            INuGetProjectContext projectContext,
+            bool throwOnFailure)
+        {
+            if (ScriptExecutor != null)
+            {
+                var packageReader = new PackageFolderReader(packageInstallPath);
+
+                var toolItemGroups = packageReader.GetToolItems();
+
+                if (toolItemGroups != null)
+                {
+                    // Init.ps1 must be found at the root folder, target frameworks are not recognized here,
+                    // since this is run for the solution.
+                    var toolItemGroup = toolItemGroups
+                                        .Where(group => group.TargetFramework.IsAny)
+                                        .FirstOrDefault();
+
+                    if (toolItemGroup != null)
+                    {
+                        var initPS1RelativePath = toolItemGroup.Items
+                            .Where(p => p.StartsWith(
+                                PowerShellScripts.InitPS1RelativePath,
+                                StringComparison.OrdinalIgnoreCase))
+                            .FirstOrDefault();
+
+                        if (!string.IsNullOrEmpty(initPS1RelativePath))
+                        {
+                            initPS1RelativePath = PathUtility
+                                .ReplaceAltDirSeparatorWithDirSeparator(initPS1RelativePath);
+
+                            return await ScriptExecutor.ExecuteAsync(
+                                identity,
+                                packageInstallPath,
+                                initPS1RelativePath,
+                                _envDTEProject,
+                                projectContext,
+                                throwOnFailure);
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+#endregion
+        public override string AssetsFile
+        {
+            get
+            {
+                var packageSpec = _packageSpecFactory();
+                var restoreOutputPath = packageSpec?.RestoreMetadata.OutputPath;
+                if(!string.IsNullOrEmpty(restoreOutputPath))
+                {
+                    return Path.Combine(restoreOutputPath, LockFileFormat.AssetsFileName);
+                }
+                return null;
+            }
+        }
+
+        public override String JsonConfigPath
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

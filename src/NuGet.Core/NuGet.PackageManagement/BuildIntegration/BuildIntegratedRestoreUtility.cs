@@ -142,9 +142,8 @@ namespace NuGet.PackageManagement
             request.MaxDegreeOfConcurrency = PackageManagementConstants.DefaultMaxDegreeOfParallelism;
 
             // Add the existing lock file if it exists
-            var lockFilePath = ProjectJsonPathUtilities.GetLockFilePath(project.JsonConfigPath);
-            request.LockFilePath = lockFilePath;
-            request.ExistingLockFile = LockFileUtilities.GetLockFile(lockFilePath, logger);
+            request.LockFilePath = project.AssetsFile;
+            request.ExistingLockFile = LockFileUtilities.GetLockFile(project.AssetsFile, logger);
 
             // Find the full closure of project.json files and referenced projects
             var projectReferences = await project.GetProjectReferenceClosureAsync(context);

@@ -7,6 +7,8 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Utilities;
 using NuGet.ProjectManagement;
 using NuGet.ProjectModel;
+using Microsoft.VisualStudio.ProjectSystem;
+using Microsoft.VisualStudio.ProjectSystem.Properties;
 
 namespace NuGet.PackageManagement.VisualStudio
 {
@@ -15,7 +17,7 @@ namespace NuGet.PackageManagement.VisualStudio
     /// </summary>
     [Export(typeof(IProjectSystemProvider))]
     [Name(nameof(CpsPackageReferenceProjectProvider))]
-    [Order(After = nameof(ProjectKNuGetProjectProvider))]
+    [Microsoft.VisualStudio.Utilities.Order(After = nameof(ProjectKNuGetProjectProvider))]
     public class CpsPackageReferenceProjectProvider : IProjectSystemProvider
     {
         private readonly IProjectSystemCache _projectSystemCache;
@@ -54,9 +56,11 @@ namespace NuGet.PackageManagement.VisualStudio
                 return false;
             }
 
-            if (!hierarchy.IsCapabilityMatch("CPS"))
+            if (!hierarchy.IsCapabilityMatch("CPS") || !hierarchy.IsCapabilityMatch("PackageReference"))
             {
-                return false;
+                {
+                    return false;
+                }
             }
 
             var projectNames = ProjectNames.FromDTEProject(dteProject);
@@ -73,13 +77,28 @@ namespace NuGet.PackageManagement.VisualStudio
                 return null;
             };
 
+            var unconfiguredProject = GetUnconfiguredProject(dteProject);
+
             result = new CpsPackageReferenceProject(
                 dteProject.Name,
                 dteProject.UniqueName,
                 fullProjectPath,
-                packageSpecFactory);
+                packageSpecFactory,
+                dteProject,
+                unconfiguredProject);
 
             return true;
         }
+
+        private UnconfiguredProject GetUnconfiguredProject(EnvDTE.Project project)
+        {
+            IVsBrowseObjectContext context = project as IVsBrowseObjectContext;
+            if (context == null && project != null)
+            { // VC implements this on their DTE.Project.Object
+                context = project.Object as IVsBrowseObjectContext;
+            }
+
+            return context != null ? context.UnconfiguredProject : null;
+         }
     }
 }
