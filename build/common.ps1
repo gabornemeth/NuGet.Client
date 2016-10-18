@@ -972,7 +972,7 @@ Function Build-ClientsProjectHelper {
     $opts += "/tv:${ToolsetVersion}.0"
 
     if (-not $VerbosePreference) {
-        $opts += '/verbosity:minimal'
+        $opts += '/verbosity:diagnostic'
     }
 
     Trace-Log "$MSBuildExe $opts"
