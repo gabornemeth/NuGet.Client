@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using EnvDTE;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using Microsoft.VisualStudio.Services.Client;
 using Microsoft.VisualStudio.Services.Client.AccountManagement;
 using Microsoft.VisualStudio.Services.DelegatedAuthorization.Client;
 using Microsoft.VisualStudio.Shell;
@@ -16,7 +15,7 @@ using NuGet.PackageManagement.VisualStudio;
 
 namespace NuGetVSExtension
 {
-    class InteractiveLoginProvider: IInteractiveLoginProvider
+    internal class InteractiveLoginProvider : IInteractiveLoginProvider
     {
         private const string VsoEndpointResource = "499b84ac-1321-427f-aa17-267ca6975798";
         private const string VssResourceTenant = "X-VSS-ResourceTenant";
@@ -139,7 +138,7 @@ namespace NuGetVSExtension
             return cred;
         }
 
-        // Internal so we can mock.  Need to call this a lot and 
+        // Internal so we can mock.  Need to call this a lot and
         public TenantInformation FindTenantInAccount(Account account, string tenantId,
             VSAccountProvider provider)
         {
