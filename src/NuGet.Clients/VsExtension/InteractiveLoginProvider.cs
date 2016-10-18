@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EnvDTE;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.VisualStudio.Services.Client;
 using Microsoft.VisualStudio.Services.Client.AccountManagement;
 using Microsoft.VisualStudio.Services.DelegatedAuthorization.Client;
 using Microsoft.VisualStudio.Shell;
