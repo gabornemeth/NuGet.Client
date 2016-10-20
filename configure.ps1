@@ -165,7 +165,7 @@ if ($MSBuildExe) {
 }
 
 New-Item $Artifacts -ItemType Directory -ea Ignore | Out-Null
-$ConfigureObject | ConvertTo-Json | Set-Content $ConfigureJson
+$ConfigureObject | ConvertTo-Json -Compress | Set-Content $ConfigureJson
 
 Trace-Log "Configuration data has been written to '$ConfigureJson'"
 
