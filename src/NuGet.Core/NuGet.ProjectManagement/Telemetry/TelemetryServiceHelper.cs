@@ -3,11 +3,9 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
-namespace NuGet.Common
+namespace NuGet.ProjectManagement
 {
     /// <summary>
     /// Telemetry helper class to help emit granular level telemetry events for a specific nuget operation.
@@ -15,15 +13,10 @@ namespace NuGet.Common
     /// </summary>
     public class TelemetryServiceHelper
     {
-        private bool _shouldMeasureEvents;
-
-        private ConcurrentDictionary<string, double> _telemetryEvents;
+        public readonly ConcurrentDictionary<string, double> TelemetryEvents = 
+            new ConcurrentDictionary<string, double>();
 
         private Stopwatch _stopWatch;
-
-        public static TelemetryServiceHelper Instance = new TelemetryServiceHelper();
-
-        private TelemetryServiceHelper() { }
 
         /// <summary>
         /// If measuring detailed telemetry events is enabled then it will start or resume
@@ -31,11 +24,6 @@ namespace NuGet.Common
         /// </summary>
         public void StartorResumeTimer()
         {
-            if (!_shouldMeasureEvents)
-            {
-                return;
-            }
-
             if (_stopWatch == null)
             {
                 _stopWatch = Stopwatch.StartNew();
@@ -54,6 +42,10 @@ namespace NuGet.Common
             _stopWatch?.Stop();
         }
 
+        /// <summary>
+        /// Return current timer elapsed time.
+        /// </summary>
+        /// <returns></returns>
         public TimeSpan GetTimerElapsedTime()
         {
             var duration = new TimeSpan();
@@ -67,65 +59,37 @@ namespace NuGet.Common
             return duration;
         }
 
+        /// <summary>
+        /// Return current timer elapsed time in seconds.
+        /// </summary>
+        /// <returns></returns>
         public double GetTimerElapsedTimeInSeconds()
         {
             return GetTimerElapsedTime().TotalSeconds;
         }
 
         /// <summary>
-        /// If measuing telemetry detailed events is enabled, then it will emit a telemetry event
-        /// with provided name and use current timer elapsed time.
+        /// Emit a telemetry event with provided name and use current timer elapsed time.
         /// Make sure to start timer before calling this api.
         /// </summary>
         /// <param name="eventName">Telemetry event name for detailed step</param>
         public void AddTelemetryEvent(string eventName)
         {
-            if (!_shouldMeasureEvents)
-            {
-                return;
-            }
-
             AddTelemetryEvent(eventName, GetTimerElapsedTimeInSeconds());
         }
 
         /// <summary>
-        /// If measuing telemetry detailed events is enabled, then it will emit a telemetry event
+        /// Emit telemetry event with provided event name and time duration.
         /// </summary>
         /// <param name="eventName">Telemetry event name</param>
         /// <param name="duration">Time duration</param>
         public void AddTelemetryEvent(string eventName, double duration)
         {
-            if (!_shouldMeasureEvents || _telemetryEvents.ContainsKey(eventName))
-            {
-                return;
-            }
-
-            _telemetryEvents.TryAdd(eventName, duration);
-        }
-
-        /// <summary>
-        /// This indicates that it can measure telemetry granular level events.
-        /// </summary>
-        public void EnableTelemetryEvents()
-        {
-            _shouldMeasureEvents = true;
-            _telemetryEvents = new ConcurrentDictionary<string, double>();
-        }
-
-        /// <summary>
-        /// It returns all granular level telemetry events for current nuget operation if it was 
-        /// enabled to measure through EnableTelemetryEvents().
-        /// </summary>
-        /// <returns>TelemetryEvents</returns>
-        public IDictionary<string, double> GetTelemetryEvents()
-        {
-            _shouldMeasureEvents = false;
-
-            var events = _telemetryEvents?.ToDictionary(entry => entry.Key,
-                entry => entry.Value);
-            _telemetryEvents?.Clear();
-
-            return events;
+            TelemetryEvents.AddOrUpdate(eventName, duration,
+                (key, existingVal) =>
+                {
+                    return existingVal + duration;
+                });
         }
     }
 }

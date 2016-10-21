@@ -5817,7 +5817,9 @@ namespace NuGet.Test
             var sourceRepositoryProvider = CreateSource(packages);
 
             // set up telemetry service
-            TelemetryServiceHelper.Instance.EnableTelemetryEvents();
+            var telemetryService = new TelemetryServiceHelper();
+            var nugetProjectContext = new TestNuGetProjectContext();
+            nugetProjectContext.TelemetryService = telemetryService;
 
             // Create Package Manager
             using (var solutionManager = new TestSolutionManager(true))
@@ -5837,14 +5839,14 @@ namespace NuGet.Test
                     nugetProject,
                     target,
                     new ResolutionContext(),
-                    new TestNuGetProjectContext(),
+                    nugetProjectContext,
                     sourceRepositoryProvider.GetRepositories(),
                     sourceRepositoryProvider.GetRepositories(),
                     CancellationToken.None);
 
                 // Assert
-                var telemetryEvents = TelemetryServiceHelper.Instance.GetTelemetryEvents();
-                Assert.True(telemetryEvents.Count >= 3);
+                var telemetryEvents = telemetryService.TelemetryEvents;
+                Assert.Equal(3, telemetryEvents.Count);
                 var projectId = string.Empty;
                 nugetProject.TryGetMetadata<string>(NuGetProjectMetadataKeys.ProjectId, out projectId);
                 VerifyPreviewActionsTelemetryEvents_PackagesConfig(projectId, telemetryEvents);
@@ -5858,7 +5860,9 @@ namespace NuGet.Test
             var sourceRepositoryProvider = TestSourceRepositoryUtility.CreateV3OnlySourceRepositoryProvider();
 
             // set up telemetry service
-            TelemetryServiceHelper.Instance.EnableTelemetryEvents();
+            var telemetryService = new TelemetryServiceHelper();
+            var nugetProjectContext = new TestNuGetProjectContext();
+            nugetProjectContext.TelemetryService = telemetryService;
 
             // Create Package Manager
             using (var solutionManager = new TestSolutionManager(true))
@@ -5878,14 +5882,14 @@ namespace NuGet.Test
                     buildIntegratedProject,
                     target,
                     new ResolutionContext(),
-                    new TestNuGetProjectContext(),
+                    nugetProjectContext,
                     sourceRepositoryProvider.GetRepositories(),
                     sourceRepositoryProvider.GetRepositories(),
                     CancellationToken.None);
 
                 // Assert
-                var telemetryEvents = TelemetryServiceHelper.Instance.GetTelemetryEvents();
-                Assert.True(telemetryEvents.Count >= 1);
+                var telemetryEvents = telemetryService.TelemetryEvents;
+                Assert.Equal(1, telemetryEvents.Count);
                 var projectId = string.Empty;
                 buildIntegratedProject.TryGetMetadata<string>(NuGetProjectMetadataKeys.ProjectId, out projectId);
                 Assert.True(telemetryEvents.ContainsKey(
@@ -5922,7 +5926,9 @@ namespace NuGet.Test
             var nuGetProject = new TestNuGetProject(installedPackages);
 
             // set up telemetry service
-            TelemetryServiceHelper.Instance.EnableTelemetryEvents();
+            var telemetryService = new TelemetryServiceHelper();
+            var nugetProjectContext = new TestNuGetProjectContext();
+            nugetProjectContext.TelemetryService = telemetryService;
 
             // Create Package Manager
             using (var solutionManager = new TestSolutionManager(true))
@@ -5940,14 +5946,14 @@ namespace NuGet.Test
                     new List<PackageIdentity> { target },
                     new List<NuGetProject> { nuGetProject },
                     new ResolutionContext(),
-                    new TestNuGetProjectContext(),
+                    nugetProjectContext,
                     sourceRepositoryProvider.GetRepositories(),
                     sourceRepositoryProvider.GetRepositories(),
                     CancellationToken.None);
 
                 // Assert
-                var telemetryEvents = TelemetryServiceHelper.Instance.GetTelemetryEvents();
-                Assert.True(telemetryEvents.Count >= 3);
+                var telemetryEvents = telemetryService.TelemetryEvents;
+                Assert.Equal(3, telemetryEvents.Count);
                 var projectId = string.Empty;
                 nuGetProject.TryGetMetadata<string>(NuGetProjectMetadataKeys.ProjectId, out projectId);
                 VerifyPreviewActionsTelemetryEvents_PackagesConfig(projectId, telemetryEvents);
@@ -5961,7 +5967,9 @@ namespace NuGet.Test
             var sourceRepositoryProvider = TestSourceRepositoryUtility.CreateV3OnlySourceRepositoryProvider();
 
             // set up telemetry service
-            TelemetryServiceHelper.Instance.EnableTelemetryEvents();
+            var telemetryService = new TelemetryServiceHelper();
+            var nugetProjectContext = new TestNuGetProjectContext();
+            nugetProjectContext.TelemetryService = telemetryService;
 
             // Create Package Manager
             using (var solutionManager = new TestSolutionManager(true))
@@ -5986,15 +5994,15 @@ namespace NuGet.Test
                 await nuGetPackageManager.ExecuteNuGetProjectActionsAsync(
                     new List<NuGetProject>() { nugetProject },
                     projectActions,
-                    new TestNuGetProjectContext(),
+                    nugetProjectContext,
                     CancellationToken.None);
 
                 // Assert
-                var telemetryEvents = TelemetryServiceHelper.Instance.GetTelemetryEvents();
+                var telemetryEvents = telemetryService.TelemetryEvents;
                 var projectId = string.Empty;
                 nugetProject.TryGetMetadata<string>(NuGetProjectMetadataKeys.ProjectId, out projectId);
 
-                Assert.True(telemetryEvents.Count >= 1);
+                Assert.Equal(1, telemetryEvents.Count);
                 Assert.True(telemetryEvents.ContainsKey(
                     string.Format(TelemetryConstants.ExecuteActionStepName, projectId)));
             }
@@ -6007,7 +6015,9 @@ namespace NuGet.Test
             var sourceRepositoryProvider = TestSourceRepositoryUtility.CreateV3OnlySourceRepositoryProvider();
 
             // set up telemetry service
-            TelemetryServiceHelper.Instance.EnableTelemetryEvents();
+            var telemetryService = new TelemetryServiceHelper();
+            var nugetProjectContext = new TestNuGetProjectContext();
+            nugetProjectContext.TelemetryService = telemetryService;
 
             using (var testSolutionManager = new TestSolutionManager(true))
             {
@@ -6038,15 +6048,15 @@ namespace NuGet.Test
                 await nuGetPackageManager.ExecuteNuGetProjectActionsAsync(
                     new List<NuGetProject>() { buildIntegratedProject },
                     projectActions,
-                    new TestNuGetProjectContext(),
+                    nugetProjectContext,
                     token);
 
                 // Assert
-                var telemetryEvents = TelemetryServiceHelper.Instance.GetTelemetryEvents();
+                var telemetryEvents = telemetryService.TelemetryEvents;
                 var projectId = string.Empty;
                 buildIntegratedProject.TryGetMetadata<string>(NuGetProjectMetadataKeys.ProjectId, out projectId);
 
-                Assert.True(telemetryEvents.Count >= 2);
+                Assert.Equal(2, telemetryEvents.Count);
                 Assert.True(telemetryEvents.ContainsKey(
                     string.Format(TelemetryConstants.PreviewBuildIntegratedStepName, projectId)));
                 Assert.True(telemetryEvents.ContainsKey(
